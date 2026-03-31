@@ -1,0 +1,77 @@
+name: datajanitor-env
+version: "0.1.0"
+description: >
+  A real-world OpenEnv environment for cleaning messy tabular datasets through
+  sequential actions such as removing duplicates, filling missing values,
+  standardizing categories, and handling outliers.
+
+environment:
+  entrypoint: app:app
+  framework: fastapi
+  base_url: http://127.0.0.1:8000
+
+tasks:
+  - task_id: easy
+    name: Basic Data Cleaning
+    difficulty: easy
+    description: Clean duplicates, missing values, and simple categorical inconsistencies.
+
+  - task_id: medium
+    name: Intermediate Data Cleaning
+    difficulty: medium
+    description: Clean duplicates, missing values, category inconsistencies, and numeric outliers.
+
+  - task_id: hard
+    name: Advanced Data Cleaning
+    difficulty: hard
+    description: Clean a noisy dataset with multiple issues under a tighter action budget.
+
+actions:
+  - inspect_dataset
+  - remove_duplicates
+  - fill_missing_mean
+  - fill_missing_mode
+  - standardize_categories
+  - remove_outliers_iqr
+  - finish
+
+endpoints:
+  reset:
+    method: POST
+    path: /reset
+    description: Reset the environment for a selected task.
+
+  step:
+    method: POST
+    path: /step
+    description: Apply one cleaning action and receive updated observation and reward.
+
+  state:
+    method: GET
+    path: /state
+    description: Get the current environment state.
+
+  tasks:
+    method: GET
+    path: /tasks
+    description: List all available tasks.
+
+  grader:
+    method: GET
+    path: /grader
+    description: Grade the current dataset state.
+
+  baseline:
+    method: GET
+    path: /baseline
+    description: Run the rule-based baseline agent across all tasks.
+
+grader:
+  metric: quality_score
+  pass_threshold: 0.85
+  output_range: [0.0, 1.0]
+
+notes:
+  - Designed for small tabular datasets.
+  - Uses deterministic grading based on measurable data quality improvements.
+  - Baseline is rule-based and intentionally not optimal on the hardest task.
