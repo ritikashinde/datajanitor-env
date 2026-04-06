@@ -128,15 +128,23 @@ def step(action_model: ActionModel):
         raise HTTPException(status_code=400, detail="Episode already finished. Call /reset again.")
 
     action = action_model.action
-
     current_df = ENV_STATE["df"]
-    before_quality = summarize_dataset(current_df)["quality_score"]
+    before_summary = summarize_dataset(current_df)
+    before_quality = before_summary["quality_score"]
 
     if action == "finish":
         ENV_STATE["done"] = True
-        after_quality = before_quality
 
-        reward = 0.2 if after_quality >= 0.85 else -0.2
+        if (
+            sum(before_summary["missing_counts"].values()) == 0
+            and before_summary["duplicate_count"] == 0
+            and sum(before_summary["numeric_outlier_counts"].values()) == 0
+            and not before_summary["categorical_inconsistencies"]
+        ):
+            reward = 0.3
+        else:
+            reward = -0.3
+
         ENV_STATE["info"] = {
             "action_taken": action,
             "message": "Episode finished by agent.",
@@ -144,12 +152,44 @@ def step(action_model: ActionModel):
 
     elif action in ACTIONS:
         new_df = ACTIONS[action](current_df)
-        after_quality = summarize_dataset(new_df)["quality_score"]
 
-        reward = round(after_quality - before_quality - 0.03, 4)
+        after_summary = summarize_dataset(new_df)
+        after_quality = after_summary["quality_score"]
 
+        reward = 0.0
+
+        # Reward reduction in missing values
+        reward += (
+            sum(before_summary["missing_counts"].values())
+            - sum(after_summary["missing_counts"].values())
+        ) * 0.1
+
+        # Reward duplicate removal
+        reward += (
+            before_summary["duplicate_count"]
+            - after_summary["duplicate_count"]
+        ) * 0.1
+
+        # Reward outlier reduction
+        reward += (
+            sum(before_summary["numeric_outlier_counts"].values())
+            - sum(after_summary["numeric_outlier_counts"].values())
+        ) * 0.1
+
+        # Reward fixing categorical inconsistencies
+        reward += (
+            len(before_summary["categorical_inconsistencies"])
+            - len(after_summary["categorical_inconsistencies"])
+        ) * 0.1
+
+        # Small step cost to discourage unnecessary actions
+        reward -= 0.03
+
+        # Penalize useless actions more strongly
         if after_quality == before_quality and action != "inspect_dataset":
-            reward = round(reward - 0.05, 4)
+            reward -= 0.1
+
+        reward = round(reward, 4)
 
         ENV_STATE["df"] = new_df
         ENV_STATE["info"] = {
@@ -188,6 +228,8 @@ def grader():
         raise HTTPException(status_code=400, detail="Environment not initialized. Call /reset first.")
 
     return grade_task_result(ENV_STATE["task_id"], ENV_STATE["df"])
+
+
 @app.get("/baseline", response_model=BaselineResponseModel)
 def baseline():
     return run_baseline()
