@@ -8,72 +8,53 @@ app_file: app.py
 pinned: false
 ---
 
-# 🧹 DataJanitorEnv: RL Environment for Data Cleaning
+# DataJanitorEnv: RL Environment for Data Cleaning
 
-## 🚀 Overview
-DataJanitorEnv is a reinforcement learning-style environment for automated data cleaning.
+## Overview
+This project is a reinforcement learning-style environment for automated data cleaning.
 
-An agent interacts with a dataset through discrete actions such as:
-- removing duplicates
-- filling missing values
-- standardizing categories
-- removing outliers
+An agent interacts with datasets using actions like:
+- remove_duplicates
+- fill_missing_values
+- standardize_categories
+- remove_outliers
 
-The goal is to transform a noisy dataset into a clean, high-quality dataset.
+The goal is to clean messy datasets step-by-step.
 
----
+## Actions
+- inspect_dataset
+- remove_duplicates
+- fill_missing_mean
+- fill_missing_mode
+- standardize_categories
+- remove_outliers_iqr
+- finish
 
-## ⚙️ Environment Design
+## Reward System
+- Rewards for fixing missing values, duplicates, outliers
+- Penalty for useless actions
+- Finish gives reward only if dataset is fully clean
 
-### 📥 Observation Space
-Each step returns:
-- number of rows and columns
-- missing value counts
-- duplicate count
-- categorical inconsistencies
-- outlier counts
-- quality score
-- preview of dataset
+## Results
+easy: 1.0  
+medium: 1.0  
+hard: 1.0  
 
----
+## Tech Stack
+FastAPI, Pandas, NumPy, Docker
 
-### 🎯 Action Space
+## API Endpoints
+/reset  
+/step  
+/grader  
+/state  
+## 🔍 API Documentation
 
-Available actions:
-- `inspect_dataset`
-- `remove_duplicates`
-- `fill_missing_mean`
-- `fill_missing_mode`
-- `standardize_categories`
-- `remove_outliers_iqr`
-- `finish`
+Interactive API documentation is available via FastAPI Swagger UI:
 
----
+👉 https://ritikashinde-datajanitor-env.hf.space/docs
 
-### 🏆 Reward Design
-
-Reward is computed based on **actual improvements**:
-
-- Reduction in missing values
-- Removal of duplicates
-- Reduction in outliers
-- Fixing categorical inconsistencies
-
-Penalties:
-- Small step penalty to discourage unnecessary actions
-- Strong penalty for ineffective actions
-- Negative reward for premature `finish`
-
-Positive reward:
-- `finish` gives reward only if dataset is fully clean
-
----
-
-## 🤖 Baseline Agent
-
-A rule-based agent is implemented that:
-- inspects dataset
-- applies cleaning actions based on state
-- avoids premature termination
-
-It achieves:
+You can use this interface to:
+- explore endpoints
+- test API calls
+- visualize request/response formats
