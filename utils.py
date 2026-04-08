@@ -22,15 +22,23 @@ def categorical_inconsistencies(df: pd.DataFrame) -> dict:
     inconsistencies = {}
 
     for col in get_categorical_columns(df):
-        unique_vals = sorted([str(v) for v in df[col].dropna().unique()])
+        values = df[col].dropna().astype(str).str.strip()
 
-        canon_map = {}
-        for v in unique_vals:
-            canon = v.strip().lower()
-            canon_map.setdefault(canon, []).append(v)
+        if col.lower() == "gender":
+            valid_values = {"Male", "Female"}
+            bad_values = sorted(set(values) - valid_values)
+            if bad_values:
+                inconsistencies[col] = bad_values
+        else:
+            unique_vals = sorted(values.unique())
 
-        if any(len(vals) > 1 for vals in canon_map.values()):
-            inconsistencies[col] = unique_vals
+            canon_map = {}
+            for v in unique_vals:
+                canon = v.strip().lower()
+                canon_map.setdefault(canon, []).append(v)
+
+            if any(len(vals) > 1 for vals in canon_map.values()):
+                inconsistencies[col] = unique_vals
 
     return inconsistencies
 
@@ -65,9 +73,27 @@ def standardize_categories(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
 
     for col in get_categorical_columns(df):
-        df[col] = df[col].apply(
-            lambda x: x.strip().lower().capitalize() if isinstance(x, str) else x
-        )
+        df[col] = df[col].apply(lambda x: x.strip() if isinstance(x, str) else x)
+
+        if col.lower() == "gender":
+            mapping = {
+                "m": "Male",
+                "male": "Male",
+                "M": "Male",
+                "Male": "Male",
+                "f": "Female",
+                "female": "Female",
+                "F": "Female",
+                "Female": "Female",
+            }
+
+            df[col] = df[col].apply(
+                lambda x: mapping.get(x.strip(), x.strip()) if isinstance(x, str) else x
+            )
+        else:
+            df[col] = df[col].apply(
+                lambda x: x.strip().lower().capitalize() if isinstance(x, str) else x
+            )
 
     return df
 
